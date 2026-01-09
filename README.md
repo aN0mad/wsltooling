@@ -3,10 +3,59 @@ Automated creation of WSL 2 Development Machine
 
 Welcome to the WSL Tooling repository. The aim of this project is to supply you with the ability to automatically install a fully working WSL 2 development environment just by invoking a powershell script even without the `wsl --install` flag.
 
-I have fully reworked and updated the whole installation. Once your Windows is capable of running WSL 2 instances, the Ubuntu LTS WSL 2 installation is fully automatic.
+I have fully reworked and updated the whole installation. Once your Windows is capable of running WSL 2 instances, Linux distribution installation is fully automatic with support for **any official WSL distribution**.
 
+## 🚀 Quick Start - Fully Automatic Installation
 
-## Preparation
+**NEW!** For a completely automated installation that handles reboots and continues automatically:
+
+```powershell
+# Run as Administrator - Interactive mode (choose your Linux distribution)
+.\installWSLAutomatic.ps1
+```
+
+**Or specify your preferred distribution:**
+
+```powershell
+# Run as Administrator - Unattended mode
+.\installWSLAutomatic.ps1 -distributionName "Ubuntu-22.04" `
+                          -wslName "devbox" `
+                          -wslInstallationPath "D:\WSL2\devbox" `
+                          -username "yourname" `
+                          -installAllSoftware "false"
+```
+
+The script will:
+- Enable WSL features if needed
+- Handle the required reboot and continue automatically after you log back in
+- Install WSL 2 kernel update
+- Let you choose from any official Linux distribution (or use the one specified)
+- Install and configure your chosen distribution
+- Optionally install development tools (Debian-based distributions only)
+
+See [INSTALL-AUTOMATIC.md](INSTALL-AUTOMATIC.md) for detailed instructions and options.
+
+## 🐧 Supported Linux Distributions
+
+The installer supports **any distribution** from Microsoft's official WSL catalog, including:
+- Ubuntu (multiple versions)
+- Debian
+- Kali Linux
+- Fedora
+- openSUSE
+- Alpine Linux
+- Oracle Linux
+- And more...
+
+See [INSTALL-LINUX-DISTRO.md](INSTALL-LINUX-DISTRO.md) for the complete guide.
+
+---
+
+## Manual Installation (Traditional Method)
+
+If you prefer manual control over each step, follow the instructions below.
+
+### Preparation
 This repository must be cloned on your local disk.
 
 ### Enable Windows Subsystem for Linux
@@ -38,11 +87,17 @@ If not already done, open a new powershell with administrative privileges and in
 - `<wslName>`: Provide a name for the WSL that is goind to be created (e.g. `devbox`)
 - `<wslInstallationPath>`: The directory where the vhdx disk of the new WSL is stored
 - `<username>`: the name of the user that is used when WSL distro is launched without `-u`
-- `<installAllSoftware>`: Use `true`|`false`. Tell if all software packages (see [Available Software](#Available-Software)) shall be installed or if `false` only a fully updated system with configured user is supplied
+- `<installAllSoftware>`: Use `true`|`false`. Tell if all software packages (see [Available Software](#Available-Software) and make modifications to `./scripts/installAllSoftware.sh`) shall be installed or if `false` only a fully updated system with configured user is supplied
 For example, the command can look as follows:
 ```powershell
 .\installUbuntuLTS.ps1 devbox D:\WSL2\devbox kai true
 ```
+
+**New Feature**: The installation script includes checkpoint/resume functionality:
+- Automatically creates checkpoints after downloading the large (900+ MB) Ubuntu file
+- Can resume installation after interruptions or failures
+- Verifies file integrity with SHA256 checksums
+- See [CHECKPOINT-RECOVERY.md](CHECKPOINT-RECOVERY.md) for details
 
 ### Available Software Package
 If don't want to install all packages during initial WSL creation, you can install them one buy one. They are available here [./scripts](./scripts). These are currently available
@@ -63,7 +118,6 @@ Firefox and other tools can be installed directly with Ubuntu's package manager 
 
 #### Removal
 Not available yet, but with a fast internet connection and fast SSD you have the WSL recreated in approx. five minutes. :sunglasses:
-
 
 ## Usage
 
