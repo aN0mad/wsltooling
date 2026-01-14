@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-01-14
+- **Bug Fix**: Fixed nested .appx architecture handling in `installLinuxDistro.ps1`
+  - Detects multi-architecture distribution packages (e.g., Debian)
+  - Automatically selects appropriate architecture package (x64, ARM64, or x86)
+  - Extracts nested .appx files to find install.tar.gz
+  - Improved error messages showing extract contents when tar.gz not found
+  - Resolves installation failures for distributions with bundled architecture variants
+
 ## 2026-01-09
 - **Major Feature**: Generalized Linux distribution installer (`installLinuxDistro.ps1`)
   - Fetches available distributions from Microsoft's official GitHub repository

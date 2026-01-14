@@ -379,6 +379,59 @@ if (Test-Path $packagePath) {
     Exit 1
 }
 
+# Check for nested .appx files (multi-architecture distributions)
+$nestedAppxFiles = Get-ChildItem -Path $extractPath -Filter "*.appx" | Where-Object { $_.Name -like "*x64*" -or $_.Name -like "*ARM64*" -or $_.Name -like "*x86*" }
+
+if ($nestedAppxFiles -and $nestedAppxFiles.Count -gt 0) {
+    Write-Host "Detected multi-architecture distribution package" -ForegroundColor Cyan
+    
+    # Determine system architecture
+    $arch = $env:PROCESSOR_ARCHITECTURE
+    Write-Host "System architecture: $arch" -ForegroundColor Gray
+    
+    # Select appropriate architecture package (prefer x64 for AMD64/x64 systems)
+    $selectedAppx = $null
+    
+    if ($arch -eq "AMD64" -or $arch -eq "x64") {
+        $selectedAppx = $nestedAppxFiles | Where-Object { $_.Name -like "*x64*" } | Select-Object -First 1
+        if ($null -eq $selectedAppx) {
+            Write-Warning "x64 package not found, trying ARM64..."
+            $selectedAppx = $nestedAppxFiles | Where-Object { $_.Name -like "*ARM64*" } | Select-Object -First 1
+        }
+    } elseif ($arch -eq "ARM64") {
+        $selectedAppx = $nestedAppxFiles | Where-Object { $_.Name -like "*ARM64*" } | Select-Object -First 1
+        if ($null -eq $selectedAppx) {
+            Write-Warning "ARM64 package not found, trying x64..."
+            $selectedAppx = $nestedAppxFiles | Where-Object { $_.Name -like "*x64*" } | Select-Object -First 1
+        }
+    } else {
+        # Fallback to x86 or first available
+        $selectedAppx = $nestedAppxFiles | Where-Object { $_.Name -like "*x86*" } | Select-Object -First 1
+        if ($null -eq $selectedAppx) {
+            $selectedAppx = $nestedAppxFiles | Select-Object -First 1
+        }
+    }
+    
+    if ($null -eq $selectedAppx) {
+        Write-Error "Could not find appropriate architecture package"
+        Exit 1
+    }
+    
+    Write-Host "Selected architecture package: $($selectedAppx.Name)" -ForegroundColor Green
+    
+    # Extract the nested .appx file
+    $nestedExtractPath = ".\staging\$wslName-nested"
+    Write-Host "Extracting nested package..." -ForegroundColor Cyan
+    
+    $tempNestedZip = ".\staging\temp_nested.zip"
+    Copy-Item $selectedAppx.FullName $tempNestedZip -Force
+    Expand-Archive $tempNestedZip $nestedExtractPath -Force
+    Remove-Item $tempNestedZip -Force -ErrorAction SilentlyContinue
+    
+    # Update extract path to the nested location
+    $extractPath = $nestedExtractPath
+}
+
 # Find the install.tar.gz file (or .tar.gz variant)
 $tarFile = Get-ChildItem -Path $extractPath -Filter "*.tar.gz" -Recurse | Select-Object -First 1
 
@@ -389,6 +442,8 @@ if ($null -eq $tarFile) {
 
 if ($null -eq $tarFile) {
     Write-Error "Could not find .tar.gz or .tar file in the distribution package"
+    Write-Host "Contents of extract path:" -ForegroundColor Yellow
+    Get-ChildItem -Path $extractPath -Recurse | Format-Table Name, Length
     Exit 1
 }
 
